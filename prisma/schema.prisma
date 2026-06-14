@@ -14,12 +14,14 @@ model Prospect {
   company     String
   domain      String
   position    String?
+  industry    String?
+  companySize String?
+  location    String?
   linkedinUrl String?
-  // Emails générés (3 variantes)
   email1      String?
   email2      String?
   email3      String?
-  emailValid  String?  // email confirmé comme valide après envoi réussi
+  emailValid  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
