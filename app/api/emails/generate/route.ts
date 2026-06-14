@@ -20,6 +20,15 @@ export async function POST(req: NextRequest) {
 
   if (!campaign) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 })
 
+// DEBUG
+console.log("Campaign found:", campaign.id)
+console.log("CampaignProspects:", campaign.campaignProspects.length)
+console.log("Sequences:", campaign.sequences.length)
+
+for (const cp of campaign.campaignProspects) {
+  console.log("CP status:", cp.status, "currentStep:", cp.currentStep)
+  const currentSequence = campaign.sequences.find(s => s.stepNumber === cp.currentStep + 1)
+  console.log("Found sequence:", currentSequence?.id)
   const generated: string[] = []
   const errors: string[] = []
 
