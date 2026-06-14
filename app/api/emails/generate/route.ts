@@ -6,7 +6,7 @@ import { generateEmailVariants } from "@/lib/email-patterns"
 export const maxDuration = 60 // 60 secondes max
 
 export async function POST(req: NextRequest) {
-  const { campaignId, autoApprove = false } = await req.json()
+  const { campaignId, autoApprove = false, limit = 100 } = await req.json()
 
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
@@ -22,6 +22,12 @@ export async function POST(req: NextRequest) {
   if (!campaign) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 })
 
   console.log("prospects trouvés:", campaign.campaignProspects.length)
+
+
+const prospectsToProcess = campaign.campaignProspects.slice(0, limit)
+
+for (const cp of prospectsToProcess) {
+
 
   const generated: string[] = []
   const errors: string[] = []

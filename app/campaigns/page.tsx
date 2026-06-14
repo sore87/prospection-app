@@ -58,14 +58,28 @@ export default function CampaignsPage() {
 
 const handleGenerate = async (campaignId: string) => {
   setGenerating(campaignId)
-  const res = await fetch("/api/emails/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ campaignId, autoApprove }),
-  })
-  const data = await res.json()
+  
+  // Récupère les prospects de la campagne
+  const res = await fetch(`/api/campaigns`)
+  const { campaigns } = await res.json()
+  const campaign = campaigns.find((c: Campaign) => c.id === campaignId)
+  const total = campaign?._count?.campaignProspects || 0
+  
+  let generated = 0
+  // Génère un email à la fois pour éviter le timeout
+  for (let i = 0; i < total; i++) {
+    const r = await fetch("/api/emails/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaignId, autoApprove, limit: 1 }),
+    })
+    const data = await r.json()
+    generated += data.generated
+    if (data.generated === 0 && data.errors === 0) break
+  }
+  
   setGenerating(null)
-  alert(`✓ ${data.generated} emails générés${data.errors > 0 ? ` · ${data.errors} erreurs` : ""}`)
+  alert(`✓ ${generated} emails générés`)
 }
 
   const handleEnroll = async (campaignId: string) => {
