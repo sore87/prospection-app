@@ -56,17 +56,17 @@ export default function CampaignsPage() {
     if (res.ok) { setShowForm(false); load() }
   }
 
-  const handleGenerate = async (campaignId: string) => {
-    setGenerating(campaignId)
-    const res = await fetch("/api/emails/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ campaignId, autoApprove }),
-    })
-    const data = await res.json()
-    setGenerating(null)
-    alert(`✓ ${data.generated} emails générés${data.errors > 0 ? ` · ${data.errors} erreurs` : ""}`)
-  }
+const handleGenerate = async (campaignId: string) => {
+  setGenerating(campaignId)
+  const res = await fetch("/api/emails/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ campaignId, autoApprove }),
+  })
+  const data = await res.json()
+  setGenerating(null)
+  alert(`✓ ${data.generated} emails générés${data.errors > 0 ? ` · ${data.errors} erreurs` : ""}`)
+}
 
   const handleEnroll = async (campaignId: string) => {
     const res = await fetch("/api/prospects?limit=1000")
