@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     include: {
       sequences: { orderBy: { stepNumber: "asc" } },
       campaignProspects: {
-        where: { status: "active" },
+        where: { status: { in: ["active", "pending"] } },
         include: { prospect: true },
       },
     },
