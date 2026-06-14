@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma"
 import { generateEmail } from "@/lib/claude"
 import { generateEmailVariants } from "@/lib/email-patterns"
 
-// Génère les emails pour tous les prospects dont c'est le jour d'envoi
 export async function POST(req: NextRequest) {
   const { campaignId, autoApprove = false } = await req.json()
 
@@ -20,23 +19,17 @@ export async function POST(req: NextRequest) {
 
   if (!campaign) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 })
 
-// DEBUG
-console.log("Campaign found:", campaign.id)
-console.log("CampaignProspects:", campaign.campaignProspects.length)
-console.log("Sequences:", campaign.sequences.length)
+  console.log("prospects trouvés:", campaign.campaignProspects.length)
 
-for (const cp of campaign.campaignProspects) {
-  console.log("CP status:", cp.status, "currentStep:", cp.currentStep)
-  const currentSequence = campaign.sequences.find(s => s.stepNumber === cp.currentStep + 1)
-  console.log("Found sequence:", currentSequence?.id)
   const generated: string[] = []
   const errors: string[] = []
 
   for (const cp of campaign.campaignProspects) {
-    const currentSequence = campaign.sequences.find(s => s.stepNumber === cp.currentStep + 1)
+    const nextStep = cp.currentStep + 1
+    const currentSequence = campaign.sequences.find(s => s.stepNumber === nextStep)
+    console.log("prospect:", cp.prospectId, "step:", nextStep, "sequence:", currentSequence?.id)
     if (!currentSequence) continue
 
-    // Vérifie si l'email a déjà été généré pour cette étape
     const existing = await prisma.email.findFirst({
       where: { sequenceId: currentSequence.id, prospectId: cp.prospectId, status: { not: "bounced" } },
     })
@@ -58,19 +51,18 @@ for (const cp of campaign.campaignProspects) {
           linkedinUrl: prospect.linkedinUrl || undefined,
         },
         {
-          stepNumber:          currentSequence.stepNumber,
-          totalSteps:          campaign.sequences.length,
-          dayGap:              currentSequence.delayDays,
-          product:             context.product,
-          targetDescription:   context.targetDescription,
-          valueProposition:    context.valueProposition,
-          senderName:          context.senderName,
-          senderPosition:      context.senderPosition,
-          senderCompany:       context.senderCompany,
+          stepNumber:        currentSequence.stepNumber,
+          totalSteps:        campaign.sequences.length,
+          dayGap:            currentSequence.delayDays,
+          product:           context.product,
+          targetDescription: context.targetDescription,
+          valueProposition:  context.valueProposition,
+          senderName:        context.senderName,
+          senderPosition:    context.senderPosition,
+          senderCompany:     context.senderCompany,
         }
       )
 
-      // Détermine l'adresse email à utiliser
       const emailTo = prospect.emailValid
         || prospect.email1
         || generateEmailVariants(prospect.firstName, prospect.lastName, prospect.domain)[0]
@@ -89,7 +81,7 @@ for (const cp of campaign.campaignProspects) {
 
       generated.push(email.id)
     } catch (err) {
-      console.error(`Erreur génération pour ${prospect.firstName} ${prospect.lastName}:`, err)
+      console.error("Erreur:", err)
       errors.push(`${prospect.firstName} ${prospect.lastName}`)
     }
   }
