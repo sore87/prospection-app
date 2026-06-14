@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { generateEmail } from "@/lib/claude"
 import { generateEmailVariants } from "@/lib/email-patterns"
 
+export const maxDuration = 60 // 60 secondes max
+
 export async function POST(req: NextRequest) {
   const { campaignId, autoApprove = false } = await req.json()
 
