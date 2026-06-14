@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma"
 import { generateEmail } from "@/lib/claude"
 import { generateEmailVariants } from "@/lib/email-patterns"
 
-export const maxDuration = 60 // 60 secondes max
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  const { campaignId, autoApprove = false, limit = 100 } = await req.json()
+  const body = await req.json()
+  const campaignId = body.campaignId
+  const autoApprove = body.autoApprove || false
+  const limit = body.limit || 100
 
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
@@ -19,27 +22,25 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  if (!campaign) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 })
+  if (!campaign) {
+    return NextResponse.json({ error: "Campagne introuvable" }, { status: 404 })
+  }
 
-  console.log("prospects trouvés:", campaign.campaignProspects.length)
-
-
-const prospectsToProcess = campaign.campaignProspects.slice(0, limit)
-
-for (const cp of prospectsToProcess) {
-
-
+  const prospectsToProcess = campaign.campaignProspects.slice(0, limit)
   const generated: string[] = []
   const errors: string[] = []
 
-  for (const cp of campaign.campaignProspects) {
+  for (const cp of prospectsToProcess) {
     const nextStep = cp.currentStep + 1
     const currentSequence = campaign.sequences.find(s => s.stepNumber === nextStep)
-    console.log("prospect:", cp.prospectId, "step:", nextStep, "sequence:", currentSequence?.id)
     if (!currentSequence) continue
 
     const existing = await prisma.email.findFirst({
-      where: { sequenceId: currentSequence.id, prospectId: cp.prospectId, status: { not: "bounced" } },
+      where: {
+        sequenceId: currentSequence.id,
+        prospectId: cp.prospectId,
+        status: { not: "bounced" },
+      },
     })
     if (existing) continue
 
@@ -47,27 +48,27 @@ for (const cp of prospectsToProcess) {
     const context = JSON.parse(currentSequence.prompt)
 
     try {
-      const { subject, body } = await generateEmail(
+      const result = await generateEmail(
         {
-          firstName:   prospect.firstName,
-          lastName:    prospect.lastName,
-          company:     prospect.company,
-          position:    prospect.position || "",
-          industry:    prospect.industry    || undefined,
+          firstName: prospect.firstName,
+          lastName: prospect.lastName,
+          company: prospect.company,
+          position: prospect.position || "",
+          industry: prospect.industry || undefined,
           companySize: prospect.companySize || undefined,
-          location:    prospect.location    || undefined,
+          location: prospect.location || undefined,
           linkedinUrl: prospect.linkedinUrl || undefined,
         },
         {
-          stepNumber:        currentSequence.stepNumber,
-          totalSteps:        campaign.sequences.length,
-          dayGap:            currentSequence.delayDays,
-          product:           context.product,
+          stepNumber: currentSequence.stepNumber,
+          totalSteps: campaign.sequences.length,
+          dayGap: currentSequence.delayDays,
+          product: context.product,
           targetDescription: context.targetDescription,
-          valueProposition:  context.valueProposition,
-          senderName:        context.senderName,
-          senderPosition:    context.senderPosition,
-          senderCompany:     context.senderCompany,
+          valueProposition: context.valueProposition,
+          senderName: context.senderName,
+          senderPosition: context.senderPosition,
+          senderCompany: context.senderCompany,
         }
       )
 
@@ -77,20 +78,20 @@ for (const cp of prospectsToProcess) {
 
       const email = await prisma.email.create({
         data: {
-          sequenceId:  currentSequence.id,
-          prospectId:  prospect.id,
-          to:          emailTo,
-          subject,
-          body,
-          status:      autoApprove ? "approved" : "pending",
-          approvedAt:  autoApprove ? new Date() : null,
+          sequenceId: currentSequence.id,
+          prospectId: prospect.id,
+          to: emailTo,
+          subject: result.subject,
+          body: result.body,
+          status: autoApprove ? "approved" : "pending",
+          approvedAt: autoApprove ? new Date() : null,
         },
       })
 
       generated.push(email.id)
     } catch (err) {
-      console.error("Erreur:", err)
-      errors.push(`${prospect.firstName} ${prospect.lastName}`)
+      console.error("Erreur Claude:", String(err))
+      errors.push(prospect.firstName + " " + prospect.lastName)
     }
   }
 
