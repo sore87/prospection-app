@@ -59,16 +59,16 @@ const EMPLOYEE_RANGES = [
 ]
 
 const COUNTRIES = [
-  "France",
-  "Belgium",
-  "Switzerland",
-  "Germany",
-  "Spain",
-  "Italy",
-  "Netherlands",
-  "United Kingdom",
-  "United States",
-  "Canada",
+  { label: "France", code: "FR" },
+  { label: "Belgique", code: "BE" },
+  { label: "Suisse", code: "CH" },
+  { label: "Allemagne", code: "DE" },
+  { label: "Espagne", code: "ES" },
+  { label: "Italie", code: "IT" },
+  { label: "Pays-Bas", code: "NL" },
+  { label: "Royaume-Uni", code: "GB" },
+  { label: "États-Unis", code: "US" },
+  { label: "Canada", code: "CA" },
 ]
 
 interface SearchResult {
@@ -83,7 +83,7 @@ export default function SearchPage() {
   const [industries, setIndustries]     = useState<string[]>([])
   const [seniorities, setSeniorities]   = useState<string[]>([])
   const [employeeRanges, setEmployeeRanges] = useState<string[]>([])
-  const [countries, setCountries]       = useState<string[]>(["France"])
+  const [countries, setCountries] = useState<string[]>(["FR"])
   const [jobTitles, setJobTitles]       = useState("")
   const [limit, setLimit]               = useState(25)
   const [loading, setLoading]           = useState(false)
@@ -103,12 +103,15 @@ export default function SearchPage() {
     if (seniorities.length > 0) {
       filters.person_seniority = { include: seniorities }
     }
-    
-
-
-// filtre taille temporairement désactivé
-
-
+    if (employeeRanges.length > 0) {
+      const selected = EMPLOYEE_RANGES.filter(r => employeeRanges.includes(r.label))
+      if (selected.length > 0) {
+        filters.company_employee_count = {
+          min: Math.min(...selected.map(r => r.min)),
+          max: Math.max(...selected.map(r => r.max)),
+        }
+      }
+    }
     if (countries.length > 0) {
       filters.person_country = { include: countries }
     }
@@ -215,9 +218,12 @@ export default function SearchPage() {
 
         <CheckGroup
           label="Pays"
-          options={COUNTRIES}
-          selected={countries}
-          onToggle={v => toggle(countries, v, setCountries)}
+          options={COUNTRIES.map(c => c.label)}
+          selected={COUNTRIES.filter(c => countries.includes(c.code)).map(c => c.label)}
+          onToggle={v => {
+            const code = COUNTRIES.find(c => c.label === v)?.code || v
+            toggle(countries, code, setCountries)
+          }}
         />
 
         <div className="flex items-end gap-4">
