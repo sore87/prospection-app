@@ -59,16 +59,16 @@ const EMPLOYEE_RANGES = [
 ]
 
 const COUNTRIES = [
-  { label: "France", code: "FR" },
-  { label: "Belgique", code: "BE" },
-  { label: "Suisse", code: "CH" },
-  { label: "Allemagne", code: "DE" },
-  { label: "Espagne", code: "ES" },
-  { label: "Italie", code: "IT" },
-  { label: "Pays-Bas", code: "NL" },
-  { label: "Royaume-Uni", code: "GB" },
-  { label: "États-Unis", code: "US" },
-  { label: "Canada", code: "CA" },
+  { label: "France", labelEn: "France", code: "FR" },
+  { label: "Belgique", labelEn: "Belgium", code: "BE" },
+  { label: "Suisse", labelEn: "Switzerland", code: "CH" },
+  { label: "Allemagne", labelEn: "Germany", code: "DE" },
+  { label: "Espagne", labelEn: "Spain", code: "ES" },
+  { label: "Italie", labelEn: "Italy", code: "IT" },
+  { label: "Pays-Bas", labelEn: "Netherlands", code: "NL" },
+  { label: "Royaume-Uni", labelEn: "United Kingdom", code: "GB" },
+  { label: "États-Unis", labelEn: "United States", code: "US" },
+  { label: "Canada", labelEn: "Canada", code: "CA" },
 ]
 
 interface SearchResult {
@@ -103,20 +103,18 @@ export default function SearchPage() {
     if (seniorities.length > 0) {
       filters.person_seniority = { include: seniorities }
     }
-    if (employeeRanges.length > 0) {
-      const selected = EMPLOYEE_RANGES.filter(r => employeeRanges.includes(r.label))
-      if (selected.length > 0) {
-        filters.company_employee_count = {
-          min: Math.min(...selected.map(r => r.min)),
-          max: Math.max(...selected.map(r => r.max)),
-        }
+    if (countries.length > 0) {
+      // Prospeo attend le nom du pays en anglais dans person_location_search
+      const countryNames = countries.map(code => {
+        const found = COUNTRIES.find(c => c.code === code)
+        return found?.labelEn || code
+      })
+      filters.person_location_search = {
+        include: countryNames.map(name => ({ country: name }))
       }
     }
-    if (countries.length > 0) {
-      filters.person_country = { include: countries }
-    }
     if (jobTitles.trim()) {
-      filters.person_title = {
+      filters.person_job_title = {
         include: jobTitles.split(",").map(t => t.trim()).filter(Boolean)
       }
     }
