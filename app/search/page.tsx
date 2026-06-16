@@ -49,14 +49,13 @@ const SENIORITIES = [
 ]
 
 const EMPLOYEE_RANGES = [
-  "1-10",
-  "11-50",
-  "51-200",
-  "201-500",
-  "501-1000",
-  "1001-5000",
-  "5001-10000",
-  "10001+",
+  { label: "1-10", min: 1, max: 10 },
+  { label: "11-50", min: 11, max: 50 },
+  { label: "51-200", min: 51, max: 200 },
+  { label: "201-500", min: 201, max: 500 },
+  { label: "501-1000", min: 501, max: 1000 },
+  { label: "1001-5000", min: 1001, max: 5000 },
+  { label: "5001+", min: 5001, max: 999999 },
 ]
 
 const COUNTRIES = [
@@ -105,7 +104,13 @@ export default function SearchPage() {
       filters.person_seniority = { include: seniorities }
     }
     if (employeeRanges.length > 0) {
-      filters.company_employee_count = { include: employeeRanges }
+      const selected = EMPLOYEE_RANGES.filter(r => employeeRanges.includes(r.label))
+      if (selected.length > 0) {
+        filters.company_employee_count = {
+          min: Math.min(...selected.map(r => r.min)),
+          max: Math.max(...selected.map(r => r.max)),
+        }
+      }
     }
     if (countries.length > 0) {
       filters.person_country = { include: countries }
@@ -206,7 +211,7 @@ export default function SearchPage() {
 
         <CheckGroup
           label="Taille entreprise"
-          options={EMPLOYEE_RANGES}
+          options={EMPLOYEE_RANGES.map(r => r.label)}
           selected={employeeRanges}
           onToggle={v => toggle(employeeRanges, v, setEmployeeRanges)}
         />
