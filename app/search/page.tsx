@@ -36,11 +36,11 @@ const INDUSTRIES = [
 ]
 
 const SENIORITIES = [
-  "Owner",
-  "Founder",
+  "Founder/Owner",
   "C-Suite",
   "Partner",
-  "VP",
+  "Vice President",
+  "Head",
   "Director",
   "Manager",
   "Senior",
