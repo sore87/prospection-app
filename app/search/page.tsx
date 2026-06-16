@@ -103,15 +103,12 @@ export default function SearchPage() {
     if (seniorities.length > 0) {
       filters.person_seniority = { include: seniorities }
     }
-    if (employeeRanges.length > 0) {
-      const selected = EMPLOYEE_RANGES.filter(r => employeeRanges.includes(r.label))
-      if (selected.length > 0) {
-        filters.company_employee_count = {
-          min: Math.min(...selected.map(r => r.min)),
-          max: Math.max(...selected.map(r => r.max)),
-        }
-      }
-    }
+    
+
+
+// filtre taille temporairement désactivé
+
+
     if (countries.length > 0) {
       filters.person_country = { include: countries }
     }
